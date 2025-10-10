@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+
+  db-auth-service:
+    image: postgres:14.1-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: dfcS33doR8eWAfdSxc
+      POSTGRES_DB: auth
+    volumes:
+      - dbAuthService:/var/lib/postgresql/data
+    networks:
+      - auth
+    ports:
+      - "5432:5432"
+
+#  db-english:
+#    image: postgres:14.1-alpine
+#    environment:
+#      POSTGRES_USER: hajik
+#      POSTGRES_PASSWORD: secret
+#      POSTGRES_DB: english
+#    volumes:
+#      - dbEnglishVolume:/var/lib/postgresql/data
+#    networks:
+#      - engl
+#    ports:
+#      - "5432:5432"
+
+#  libretranslate:
+#    image: libretranslate/libretranslate:latest
+#    container_name: libretranslate
+#    ports:
+#      - "5000:5000"
+#    environment:
+#      # Включаем только нужные языки для экономии памяти
+#      - LT_LOAD_ONLY=en,ru,es
+#      # Отключаем API ключи, можно включить, если нужно
+#      - LT_API_KEYS=false
+#    volumes:
+#      # Кеш моделей, чтобы при перезапуске не скачивались заново
+#      - libretranslate_models:/home/libretranslate/.local
+#    restart: unless-stopped
+
+networks:
+  auth:
+
+volumes:
+  #  libretranslate_models:
+  #  dbEnglishVolume:
+  #    driver: local
+  dbAuthService:
+    driver: local
+
+

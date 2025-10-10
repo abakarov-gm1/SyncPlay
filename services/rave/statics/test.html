@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VK Video API Example</title>
+</head>
+<body>
+<h1>VK Video с управлением</h1>
+
+<!-- Вставляем iframe с js_api=1 -->
+<iframe id="vkVideo"
+        src="https://vk.com/video_ext.php?oid=-29218811&id=456248121&hash=8d17d4db931f8db6&js_api=1"
+        width="640" height="360"
+        frameborder="0"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allowfullscreen>
+</iframe>
+
+<!-- Кнопки управления -->
+<div>
+    <button onclick="playVideo()">▶ Play</button>
+    <button onclick="pauseVideo()">⏸ Pause</button>
+    <button onclick="seekForward()">⏩ +10s</button>
+    <button onclick="seekBackward()">⏪ -10s</button>
+</div>
+
+<!-- Подключаем VK API -->
+<script src="https://vk.com/js/api/videoplayer.js"></script>
+<script>
+    const iframe = document.getElementById('vkVideo');
+    const player = VK.VideoPlayer(iframe);
+
+    // Методы управления
+    function playVideo() {
+        player.play();
+    }
+
+    function pauseVideo() {
+        player.pause();
+    }
+
+    function seekForward() {
+        player.seek(player.getCurrentTime() + 10);
+    }
+
+    function seekBackward() {
+        player.seek(player.getCurrentTime() - 10);
+    }
+
+    // Логирование событий
+    player.on('playing', (state) => console.log("▶ Воспроизведение", state));
+    player.on('paused', (state) => console.log("⏸ Пауза", state));
+    player.on('timeupdate', (state) => console.log("⏱ Время:", state.time, "секунд"));
+    player.on('ended', () => console.log("⏹ Видео закончилось"));
+</script>
+
+</body>
+</html>

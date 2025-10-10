@@ -1,0 +1,223 @@
+server
+
+// package main
+//
+// import (
+//
+//	"fmt"
+//	"github.com/gorilla/websocket"
+//	"net/http"
+//
+// )
+//
+//	type Message struct {
+//		Type     string  `json:"type"`              // "chat" или "action"
+//		Message  string  `json:"message,omitempty"` // для чата
+//		State    string  `json:"state"`             // состояние "пауза/и тд "
+//		Volume   float64 `json:"volume"`
+//		Muted    bool    `json:"muted"` // звук приглушенный
+//		Time     float64 `json:"time"`
+//		Duration float64 `json:"duration"` // продолжительность
+//		Quality  int     `json:"quality"`  // качество
+//	}
+//
+//	var upgrader = websocket.Upgrader{
+//		CheckOrigin: func(r *http.Request) bool {
+//			return true
+//		},
+//	}
+//
+// var clients = make(map[*websocket.Conn]bool)
+//
+// func wsHandler(w http.ResponseWriter, r *http.Request) {
+//
+//		conn, err := upgrader.Upgrade(w, r, nil)
+//		clients[conn] = true
+//
+//		if err != nil {
+//			fmt.Println("Error upgrading:", err)
+//			return
+//		}
+//		defer conn.Close()
+//		defer delete(clients, conn)
+//
+//		for {
+//			var newMessage Message
+//
+//			err := conn.ReadJSON(&newMessage)
+//			if err != nil {
+//				fmt.Println("Error reading JSON:", err)
+//				break
+//			}
+//			fmt.Println(newMessage)
+//
+//			for client := range clients {
+//				err := client.WriteJSON(newMessage)
+//				if err != nil {
+//					client.Close()
+//					delete(clients, client)
+//					break
+//				}
+//
+//			}
+//		}
+//	}
+//
+//	func main() {
+//		http.HandleFunc("/ws", wsHandler)
+//		fmt.Println("WebSocket server started on :8080")
+//		err := http.ListenAndServe(":8080", nil)
+//		if err != nil {
+//			fmt.Println("Error starting server:", err)
+//		}
+//	}
+
+
+
+client
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+<!--    <title>VK Video</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>VK Video с управлением</h1>-->
+
+<!--<iframe id="vkVideo"-->
+<!--        src="https://vk.com/video_ext.php?oid=-29218811&id=456248121&hash=8d17d4db931f8db6&js_api=1"-->
+<!--        width="640" height="360"-->
+<!--        frameborder="0"-->
+<!--        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"-->
+<!--        allowfullscreen>-->
+<!--</iframe>-->
+<!--&lt;!&ndash; Подключаем VK API &ndash;&gt;-->
+<!--<script src="https://vk.com/js/api/videoplayer.js"></script>-->
+
+<!--&lt;!&ndash;webSocket&ndash;&gt;-->
+
+<!--<div>-->
+<!--    <input type="text" id="messageInput" placeholder="Enter your message">-->
+<!--    <button onclick="sendMessage()">Send</button>-->
+<!--</div>-->
+<!--<div id="messages"></div>-->
+
+<!--<script>-->
+<!--    let ws;-->
+<!--    const iframe = document.getElementById('vkVideo');-->
+<!--    const player = VK.VideoPlayer(iframe);-->
+
+<!--    //player.on('playing', (state) => console.log("▶ Воспроизведение", state));-->
+<!--    // player.on('paused', (state) => console.log("⏸ Пауза", state));-->
+<!--    player.on('timeupdate', (state) => console.log("⏱ Время:", state.time, "секунд"));-->
+<!--    // player.on('ended', () => console.log("⏹ Видео закончилось"));-->
+
+<!--    function connect() {-->
+<!--        ws = new WebSocket("ws://localhost:8080/ws");-->
+
+<!--        ws.onopen = function() {-->
+<!--            console.log("Connected to WebSocket server");-->
+<!--        };-->
+
+<!--        ws.onmessage = function(event) {-->
+
+<!--            let data;-->
+
+<!--            try {-->
+<!--                data = JSON.parse(event.data);-->
+<!--            } catch {-->
+<!--                console.warn("Некорректный JSON:", event.data);-->
+<!--                return;-->
+<!--            }-->
+
+<!--            switch(data.type) {-->
+<!--                case "chat":-->
+<!--                    const messages = document.getElementById("messages");-->
+<!--                    messages.innerHTML += `<p>${data.message}</p>`;-->
+<!--                    break;-->
+<!--                case "action":-->
+<!--                    if (data.state === "paused") {-->
+<!--                        player.pause()-->
+<!--                        player.seek(data.time)-->
+<!--                    }-->
+<!--                    if (data.state === "playing") {-->
+<!--                        player.seek(data.time)-->
+<!--                        player.play()-->
+<!--                    }-->
+<!--                    if (data.state === "seek" && typeof data.time === "number") {-->
+<!--                        player.setCurrentTime(data.time);-->
+<!--                    }-->
+<!--                    break;-->
+<!--                default:-->
+<!--                    console.warn("Неизвестный тип:", data.type);-->
+<!--            }-->
+<!--        };-->
+
+<!--        ws.onclose = function() {-->
+<!--            console.log("WebSocket connection closed, retrying...");-->
+<!--            setTimeout(connect, 1000); // Reconnect after 1 second-->
+<!--        };-->
+
+<!--        ws.onerror = function(error) {-->
+<!--            console.error("WebSocket error:", error);-->
+<!--        };-->
+<!--    }-->
+
+<!--    function sendMessage() {-->
+<!--        let input = document.getElementById("messageInput");-->
+<!--        let message = input.value;-->
+
+<!--        //ws.send(message);-->
+<!--        //ws.send(JSON.stringify({ type: "chat", message: message, action: "", time: 1 }))-->
+<!--        ws.send(JSON.stringify({-->
+<!--            type: "chat",        // string-->
+<!--            message: message,     // string-->
+<!--            state: "",       // string-->
+<!--            volume: 0.0,     // float64-->
+<!--            muted: false,    // bool-->
+<!--            time: 0.0,       // float64-->
+<!--            duration: 0.0,   // float64-->
+<!--            quality: 0       // int-->
+<!--        }))-->
+<!--        input.value = "";-->
+<!--    }-->
+
+<!--    // Отправка событий "play" и "pause" на сервер-->
+<!--    player.on('resumed', (state) => {-->
+<!--        console.log("sssssssssssssssss", state)-->
+<!--        // ws.send(JSON.stringify({ type: "action", message: "", action: "play", time: 1 }));-->
+<!--        ws.send(JSON.stringify({-->
+<!--            type: "action",-->
+<!--            message: "",-->
+<!--            state: state.state,-->
+<!--            volume: 0.0,-->
+<!--            muted: false,-->
+<!--            time: state.time,-->
+<!--            duration: 0.0,-->
+<!--            quality: 0-->
+<!--        }));-->
+<!--    });-->
+
+<!--    player.on('paused', (state) => {-->
+<!--        console.log("pppppppppppppppp", state)-->
+<!--        //ws.send(JSON.stringify({ type: "action", message: "", action: "pause", time: 1 }));-->
+<!--        ws.send(JSON.stringify({-->
+<!--            type: "action",-->
+<!--            message: "",-->
+<!--            state: state.state,-->
+<!--            volume: 0.0,-->
+<!--            muted: false,-->
+<!--            time: state.time,-->
+<!--            duration: 0.0,-->
+<!--            quality: 0-->
+<!--        }));-->
+<!--    });-->
+
+<!--    connect();-->
+<!--</script>-->
+
+<!--&lt;!&ndash;&ndash;&gt;-->
+<!--</body>-->
+<!--</html>-->
+

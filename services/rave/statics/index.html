@@ -1,0 +1,127 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VK Video</title>
+</head>
+<body>
+<h1>VK Video с управлением</h1>
+
+<iframe id="vkVideo"
+        src="https://vk.com/video_ext.php?oid=-29218811&id=456248121&hash=8d17d4db931f8db6&js_api=1"
+        width="640" height="360"
+        frameborder="0"
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allowfullscreen>
+</iframe>
+<!-- Подключаем VK API -->
+<script src="https://vk.com/js/api/videoplayer.js"></script>
+
+<!--webSocket-->
+
+<div>
+    <input type="text" id="messageInput" placeholder="Enter your message">
+    <button onclick="sendMessage()">Send</button>
+</div>
+<div id="messages"></div>
+
+<script>
+    let ws;
+    const iframe = document.getElementById('vkVideo');
+    const player = VK.VideoPlayer(iframe);
+
+    // Флаг, чтобы не обрабатывать свои же события
+    let isLocalAction = false;
+
+    // Генерируем уникальный ID для текущего клиента
+    const localId = Math.random().toString(36).substring(2);
+
+    function connect() {
+        ws = new WebSocket("ws://localhost:8080/ws");
+
+        ws.onopen = () => console.log("Connected to WebSocket server");
+
+        ws.onmessage = (event) => {
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch {
+                console.warn("Некорректный JSON:", event.data);
+                return;
+            }
+
+            // Игнорируем свои действия
+
+
+            switch (data.type) {
+                case "chat":
+                    document.getElementById("messages").innerHTML += `<p>${data.message}</p>`;
+                    break;
+
+                case "action":
+                    if (data.localId === localId) return;
+                    isLocalAction = true;
+                    if (data.state === "paused") {
+                        player.pause();
+                        player.seek(data.time);
+                    }
+                    if (data.state === "playing") {
+                        player.seek(data.time);
+                        player.play();
+                    }
+                    isLocalAction = false;
+                    break;
+
+                default:
+                    console.warn("Неизвестный тип сообщения:", data.type);
+            }
+        };
+
+        ws.onclose = () => setTimeout(connect, 1000);
+        ws.onerror = (err) => console.error("WebSocket error:", err);
+    }
+
+    // Отправка сообщений чата
+    function sendMessage() {
+        let input = document.getElementById("messageInput");
+        let message = input.value;
+        if (!message) return;
+
+        ws.send(JSON.stringify({
+            type: "chat",
+            message,
+            localId
+        }));
+        input.value = "";
+    }
+
+    // Отправка действий плеера
+    function sendAction(state, time) {
+        ws.send(JSON.stringify({
+            type: "action",
+            state,
+            time,
+            localId
+        }));
+    }
+
+    // Подписка на события плеера
+    player.on('resumed', (state) => {
+        if (!isLocalAction) sendAction(state.state, state.time);
+    });
+
+    player.on('paused', (state) => {
+        if (!isLocalAction) sendAction(state.state, state.time);
+    });
+
+    connect();
+</script>
+
+
+<!---->
+</body>
+</html>
+
