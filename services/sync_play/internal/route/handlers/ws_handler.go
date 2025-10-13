@@ -1,17 +1,19 @@
-package main
+package handlers
 
 import (
 	"fmt"
 	"github.com/gorilla/websocket"
+	"goWin/services/syncPlay/internal/app"
+	"goWin/services/syncPlay/internal/drt"
 	"net/http"
 )
 
-type Message struct {
-	Type    string  `json:"type"` // "chat" или "action"
-	Message string  `json:"message,omitempty"`
-	State   string  `json:"state,omitempty"` // "paused"/"playing"
-	Time    float64 `json:"time,omitempty"`  // позиция видео
-	LocalId string  `json:"localId"`         // уникальный ID клиента
+type WsHandler struct {
+	services *app.ServiceContainer
+}
+
+func NewWsHandler(services *app.ServiceContainer) *WsHandler {
+	return &WsHandler{services: services}
 }
 
 var upgrader = websocket.Upgrader{
@@ -20,7 +22,9 @@ var upgrader = websocket.Upgrader{
 
 var clients = make(map[*websocket.Conn]bool)
 
-func wsHandler(w http.ResponseWriter, r *http.Request) {
+func (ws *WsHandler) Ws(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("WsHandler.Ws triggered")
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Error upgrading:", err)
@@ -31,7 +35,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	defer delete(clients, conn)
 
 	for {
-		var msg Message
+		var msg drt.Message
 		err := conn.ReadJSON(&msg)
 		if err != nil {
 			fmt.Println("Error reading JSON:", err)
@@ -54,13 +58,5 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	}
-}
-
-func main() {
-	http.HandleFunc("/ws", wsHandler)
-	fmt.Println("WebSocket server started on :8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Println("Server error:", err)
 	}
 }
