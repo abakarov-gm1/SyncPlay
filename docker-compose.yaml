@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+
+  db-auth-service:
+    image: postgres:14.1-alpine
+    environment:
+      POSTGRES_USER: auth
+      POSTGRES_PASSWORD: dfcS33doR8eWAfdSxc
+      POSTGRES_DB: auth
+    volumes:
+      - dbAuthService:/var/lib/postgresql/data
+    networks:
+      - auth
+    ports:
+      - "5432:5432"
+
+  auth-service:
+    build:
+      context: services/auth_service
+      dockerfile: Dockerfile
+    networks:
+      - auth
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/auth_service:/app
+
+  sync-video-service:
+    build:
+      context: services/sync_play
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./services/sync_play:/app
+    networks:
+      - auth
+
+networks:
+  auth:
+
+volumes:
+  dbAuthService:
+    driver: local
+

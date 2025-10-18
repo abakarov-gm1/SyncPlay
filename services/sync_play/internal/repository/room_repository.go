@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"goWin/services/syncPlay/models"
+	"goWin/services/syncPlay/internal/models"
 	"gorm.io/gorm"
 )
 

@@ -1,4 +1,9 @@
-FROM ubuntu:latest
-LABEL authors="Gadjimurad"
+FROM golang
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /app
+
+COPY go.mod go.sum ./
+
+RUN go mod download
+
+COPY . .

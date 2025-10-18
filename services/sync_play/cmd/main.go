@@ -4,8 +4,8 @@ import (
 	"github.com/joho/godotenv"
 	"goWin/services/syncPlay/internal/app"
 	"goWin/services/syncPlay/internal/database"
+	"goWin/services/syncPlay/internal/models"
 	"goWin/services/syncPlay/internal/route"
-	"goWin/services/syncPlay/models"
 	"log"
 )
 
