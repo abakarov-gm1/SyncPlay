@@ -2,40 +2,63 @@ package main
 
 import (
 	"fmt"
-	"sync"
 )
 
+type FirstDetail struct {
+	Number string
+}
+
+type SecondDetail struct {
+	Number string
+}
+
+type Composite struct {
+	Number string
+	First  FirstDetail
+	Second SecondDetail
+}
+
+func result(firstCh chan *Composite, s []string) chan *Composite {
+	resultCh := make(chan *Composite)
+
+	go func() {
+		for i, _ := range s {
+			sec := SecondDetail{Number: fmt.Sprintf("%s-%s", s[i], "2")}
+			c := <-firstCh
+			c.Second = sec
+			resultCh <- c
+		}
+		close(resultCh)
+	}()
+
+	return resultCh
+}
+
 func main() {
-	var n1, n2 int
-	fmt.Scan(&n1, &n2)
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-	mu := sync.Mutex{}
+	firstCh := make(chan *Composite)
+	//secondCh := make(chan *Composite)
 
-	result := 999999
+	var n int
+	var details string
+	var s []string
+	_, _ = fmt.Scan(&n)
 
-	var res [2]int
-
-	go func() {
-		wg.Done()
-		mu.Lock()
-		res[0] = n1
-		if result > n1 {
-			result = n1
-		}
-		mu.Unlock()
-
-	}()
+	for range n {
+		_, _ = fmt.Scan(&details)
+		s = append(s, details)
+	}
 
 	go func() {
-		wg.Done()
-		mu.Lock()
-		res[1] = n2
-		if result > n2 {
-			result = n2
+		for i, _ := range s {
+			c := &Composite{Number: s[i]}
+			f := FirstDetail{Number: fmt.Sprintf("%s-%s", s[i], "1")}
+			c.First = f
+			firstCh <- c
 		}
-		mu.Unlock()
 	}()
-	wg.Wait()
-	fmt.Println(result)
+
+	for value := range result(firstCh, s) {
+		fmt.Println(value)
+	}
+
 }
